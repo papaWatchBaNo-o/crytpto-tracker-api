@@ -8,7 +8,6 @@ let topCache = { data: null, cachedAt: 0 };
 let watchlistCache = {};
 
 router.get('/top', async (req, res) => {
-  // Check cache first
   const now = Date.now();
   if (topCache.data && (now - topCache.cachedAt) < 30000) {
     return res.json(topCache.data);
@@ -19,11 +18,9 @@ router.get('/top', async (req, res) => {
       'https://api.coingecko.com/api/v3/coins/markets?vs_currency=usd&order=market_cap_desc&per_page=100&page=1&sparkline=true&price_change_percentage=24h'
     );
     
-    // save to cache and return
     topCache = { data: response.data, cachedAt: Date.now() };
     res.json(response.data);
   } catch (error) {
-    // Use cached data if API fails
     if (topCache.data) {
       return res.json(topCache.data);
     }
@@ -50,7 +47,6 @@ router.post('/watchlist', auth, async (req, res) => {
     const { coinId, coinName } = req.body;
     const user = await User.findById(req.userId);
 
-    // if coin already in watchlist
     const alreadyInWatchlist = user.watchlist.some(item => item.coinId === coinId);
     if (alreadyInWatchlist) {
       return res.status(400).json({ error: 'Coin already in watchlist' });
@@ -91,7 +87,6 @@ router.get('/watchlist', auth, async (req, res) => {
     const sortedIds = [...coinIdsArr].sort();
     const coinIds = sortedIds.join(',');
 
-    //show cached data if available and updated within 30 seconds
     const now = Date.now();
     const cached = watchlistCache[coinIds];
     if (cached && (now - cached.cachedAt) < 30000) {
@@ -102,11 +97,9 @@ router.get('/watchlist', auth, async (req, res) => {
       `https://api.coingecko.com/api/v3/coins/markets?vs_currency=usd&ids=${coinIds}&order=market_cap_desc&sparkline=true&price_change_percentage=24h`
     );
 
-    // save to cache and return
     watchlistCache[coinIds] = { data: response.data, cachedAt: Date.now() };
     res.json(response.data);
   } catch (error) {
-    // show cached data if API fails
     const user = await User.findById(req.userId);
     const coinIdsKey = user.watchlist.map(i => i.coinId).sort().join(',');
     const stale = watchlistCache[coinIdsKey];

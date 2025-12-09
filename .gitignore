@@ -1,4 +1,12 @@
 .env
-node_modules
-dist
-backend/node_modules
+.env.production
+.env.local
+.env.development
+
+node_modules/
+
+*.log
+npm-debug.log*
+
+.DS_Store
+Thumbs.db
