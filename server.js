@@ -10,6 +10,7 @@ const isDevelopment = !isProduction;
 
 const allowedOrigins = [
   'https://sabbath-1.github.io',
+  'https://sabbath-1.github.io/crypto-tracker-frontend',
   'http://localhost:3000',
 ];
 
