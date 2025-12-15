@@ -107,6 +107,11 @@ mongoose.connect(MONGODB_URI, mongooseOptions)
   }
 });
 
+mongoose.connection.once("open", () => {
+  console.log("MongoDB connected");
+  app.listen(PORT, () => console.log(`Server running on ${PORT}`));
+});
+
 mongoose.connection.on('error', err => {
   console.error('MongoDB error:', err.message);
 });
