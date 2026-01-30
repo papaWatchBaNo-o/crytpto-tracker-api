@@ -22,7 +22,7 @@ router.post('/register', async (req, res) => {
     const user = new User({ username, email, password });
     await user.save();
 
-    // generate token
+    // generate tokenn
     const token = jwt.sign(
       { userId: user._id }, 
       process.env.JWT_SECRET,
