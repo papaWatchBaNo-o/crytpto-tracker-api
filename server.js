@@ -9,6 +9,7 @@ const isProduction = process.env.NODE_ENV === 'production';
 const isDevelopment = !isProduction;
 
 const allowedOrigins = [
+  'https://realcryptotracker.netlify.app/',
   'https://papawatchbano-o.github.io',
   'https://papawatchbano-o.github.io/crypto-tracker-frontend',
   'http://localhost:3000',
