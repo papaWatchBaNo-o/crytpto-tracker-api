@@ -5,8 +5,8 @@
   "main": "server.js",
   "scripts": {
     "start": "node server.js",
-    "dev": "nodemon server.js",
-    "devStart": "nodemon server.js"
+    "dev": "node server.js",
+    "devStart": "node server.js"
   },
   "keywords": [
     "crypto",
