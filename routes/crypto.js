@@ -59,8 +59,11 @@ const withRetry = async (requestFn, retries = UPSTREAM_RETRIES) => {
 };
 
 router.get('/top', async (req, res) => {
-  const cachedTop = getCachedPayload(topCache);
+  const shouldForceRefresh = req.query.force === '1' || req.query.force === 'true';
+  const cachedTop = shouldForceRefresh ? null : getCachedPayload(topCache);
+
   if (cachedTop) {
+    res.set('X-Data-Source', 'cache');
     return res.json(cachedTop);
   }
 
@@ -79,6 +82,7 @@ router.get('/top', async (req, res) => {
     );
 
     topCache = { data: response.data, cachedAt: Date.now() };
+    res.set('X-Data-Source', 'live');
     return res.json(response.data);
   } catch (error) {
     if (topCache.data) {
