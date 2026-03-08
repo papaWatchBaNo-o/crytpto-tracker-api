@@ -8,6 +8,7 @@ const router = express.Router();
 const COINGECKO_BASE_URL = 'https://api.coingecko.com/api/v3';
 const CACHE_TTL_MS = 30 * 1000;
 const API_TIMEOUT_MS = 12 * 1000;
+const UPSTREAM_RETRIES = 2;
 
 const coinGecko = axios.create({
   baseURL: COINGECKO_BASE_URL,
@@ -27,6 +28,36 @@ const getCachedPayload = (cacheEntry) => {
 
 const sanitizeCoinId = (value) => String(value || '').trim().toLowerCase();
 
+const wait = (ms) =>
+  new Promise((resolve) => {
+    setTimeout(resolve, ms);
+  });
+
+const withRetry = async (requestFn, retries = UPSTREAM_RETRIES) => {
+  let lastError;
+
+  for (let attempt = 0; attempt <= retries; attempt += 1) {
+    try {
+      return await requestFn();
+    } catch (error) {
+      lastError = error;
+
+      const status = error.response?.status;
+      const shouldRetry =
+        attempt < retries &&
+        (!status || status === 429 || status >= 500 || error.code === 'ECONNABORTED');
+
+      if (!shouldRetry) {
+        break;
+      }
+
+      await wait(250 * (attempt + 1));
+    }
+  }
+
+  throw lastError;
+};
+
 router.get('/top', async (req, res) => {
   const cachedTop = getCachedPayload(topCache);
   if (cachedTop) {
@@ -34,25 +65,29 @@ router.get('/top', async (req, res) => {
   }
 
   try {
-    const response = await coinGecko.get('/coins/markets', {
-      params: {
-        vs_currency: 'usd',
-        order: 'market_cap_desc',
-        per_page: 100,
-        page: 1,
-        sparkline: true,
-        price_change_percentage: '24h',
-      },
-    });
+    const response = await withRetry(() =>
+      coinGecko.get('/coins/markets', {
+        params: {
+          vs_currency: 'usd',
+          order: 'market_cap_desc',
+          per_page: 100,
+          page: 1,
+          sparkline: true,
+          price_change_percentage: '24h',
+        },
+      })
+    );
 
     topCache = { data: response.data, cachedAt: Date.now() };
     return res.json(response.data);
   } catch (error) {
     if (topCache.data) {
+      res.set('X-Data-Source', 'stale-cache');
       return res.json(topCache.data);
     }
 
-    return res.status(502).json({ error: 'Failed to fetch crypto market data' });
+    res.set('X-Data-Source', 'degraded-empty');
+    return res.json([]);
   }
 });
 
@@ -150,15 +185,17 @@ router.get('/watchlist', auth, async (req, res) => {
       return res.json(cachedWatchlist);
     }
 
-    const response = await coinGecko.get('/coins/markets', {
-      params: {
-        vs_currency: 'usd',
-        ids: coinIdsKey,
-        order: 'market_cap_desc',
-        sparkline: true,
-        price_change_percentage: '24h',
-      },
-    });
+    const response = await withRetry(() =>
+      coinGecko.get('/coins/markets', {
+        params: {
+          vs_currency: 'usd',
+          ids: coinIdsKey,
+          order: 'market_cap_desc',
+          sparkline: true,
+          price_change_percentage: '24h',
+        },
+      })
+    );
 
     watchlistCache[coinIdsKey] = { data: response.data, cachedAt: Date.now() };
     return res.json(response.data);
@@ -168,10 +205,12 @@ router.get('/watchlist', auth, async (req, res) => {
       : '';
 
     if (fallbackCoinIdsKey && watchlistCache[fallbackCoinIdsKey]?.data) {
+      res.set('X-Data-Source', 'stale-cache');
       return res.json(watchlistCache[fallbackCoinIdsKey].data);
     }
 
-    return res.status(502).json({ error: 'Failed to fetch watchlist data' });
+    res.set('X-Data-Source', 'degraded-empty');
+    return res.json([]);
   }
 });
 

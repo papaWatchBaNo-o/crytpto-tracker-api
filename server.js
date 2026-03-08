@@ -13,6 +13,7 @@ const isDevelopment = !isProduction;
 const PORT = Number(process.env.PORT) || 5000;
 
 const defaultOrigins = [
+  'https://signalcrypt.netlify.app',
   'https://realcryptotracker.netlify.app',
   'https://papawatchbano-o.github.io',
   'https://papawatchbano-o.github.io/crypto-tracker-frontend',
@@ -153,7 +154,7 @@ const startServer = async () => {
 
     server = app.listen(PORT, () => {
       console.log('='.repeat(44));
-      console.log('Crypto Tracker API');
+      console.log('SignalCrypt API');
       console.log('='.repeat(44));
       console.log(`Environment: ${isProduction ? 'production' : 'development'}`);
       console.log(`Port: ${PORT}`);

@@ -1,7 +1,7 @@
 {
-  "name": "crypto-tracker-backend",
+  "name": "signalcrypt-backend",
   "version": "1.0.0",
-  "description": "Crypto Tracker Backend API",
+  "description": "SignalCrypt Backend API",
   "main": "server.js",
   "scripts": {
     "start": "node server.js",
